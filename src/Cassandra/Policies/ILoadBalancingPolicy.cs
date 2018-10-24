@@ -64,5 +64,7 @@ namespace Cassandra
         ///  by this iterator in order, until the query has been sent successfully to one
         ///  of the host.</returns>
         IEnumerable<Host> NewQueryPlan(string keyspace, IStatement query);
+
+        bool RequiresPartitionMap { get; }
     }
 }

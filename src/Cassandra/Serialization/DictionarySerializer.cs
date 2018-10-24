@@ -17,6 +17,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 
 namespace Cassandra.Serialization
 {
@@ -34,7 +36,15 @@ namespace Cassandra.Serialization
             var valueType = GetClrType(mapInfo.ValueTypeCode, mapInfo.ValueTypeInfo);
             var count = DecodeCollectionLength((ProtocolVersion)protocolVersion, buffer, ref offset);
             var dicType = typeof(SortedDictionary<,>).MakeGenericType(keyType, valueType);
-            var result = (IDictionary)Activator.CreateInstance(dicType);
+            IDictionary result;
+            object comparer = null;
+            // system.partitions contains dictonary with IPAddress key, that is not comparable.
+            // So use custom comparer for it.
+            if (keyType == typeof(IPAddress))
+            {
+                comparer = IPAddressComparer.Instance;
+            }
+            result = (IDictionary)(comparer == null ? Activator.CreateInstance(dicType) : Activator.CreateInstance(dicType, comparer));
             for (var i = 0; i < count; i++)
             {
                 var keyLength = DecodeCollectionLength((ProtocolVersion)protocolVersion, buffer, ref offset);
@@ -86,6 +96,30 @@ namespace Cassandra.Serialization
             bufferList.AddLast(keyLengthBuffer);
             bufferList.AddLast(keyBuffer);
             return keyLengthBuffer.Length + keyBuffer.Length;
+        }
+    }
+
+    internal class IPAddressComparer : IComparer<IPAddress>
+    {
+        public static readonly IPAddressComparer Instance = new IPAddressComparer();
+
+        public int Compare(IPAddress lhs, IPAddress rhs)
+        {
+            return Compare(lhs.GetAddressBytes(), rhs.GetAddressBytes());
+        }
+
+        public int Compare(byte[] lhs, byte[] rhs)
+        {
+            var minLen = Math.Min(lhs.Length, rhs.Length);
+            for (var i = 0; i != minLen; ++i)
+            {
+                int delta = lhs[i] - rhs[i];
+                if (delta != 0)
+                {
+                    return delta;
+                }
+            }
+            return lhs.Length - rhs.Length;
         }
     }
 }

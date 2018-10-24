@@ -14,6 +14,8 @@
 //   limitations under the License.
 //
 
+using Cassandra.YugaByte;
+
 namespace Cassandra
 {
     /// <summary>
@@ -31,7 +33,7 @@ namespace Cassandra
         {
             get
             {
-                return new TokenAwarePolicy(new DCAwareRoundRobinPolicy());
+                return new PartitionAwarePolicy();
             }
         }
 

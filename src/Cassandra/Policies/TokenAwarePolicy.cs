@@ -134,5 +134,13 @@ namespace Cassandra
                 yield return h;
             }
         }
+
+        public bool RequiresPartitionMap
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 }

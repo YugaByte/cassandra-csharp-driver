@@ -25,6 +25,7 @@ using Cassandra.Tasks;
 using Cassandra.Requests;
 using Cassandra.Responses;
 using Cassandra.Serialization;
+using Cassandra.YugaByte;
 
 namespace Cassandra
 {
@@ -132,6 +133,7 @@ namespace Cassandra
                     _host = host;
 
                     await RefreshNodeList().ConfigureAwait(false);
+                    await _metadata.RefreshPartitionMap().ConfigureAwait(false);
 
                     var commonVersion = ProtocolVersion.GetHighestCommon(_metadata.Hosts);
                     if (commonVersion != _serializer.ProtocolVersion)
@@ -265,6 +267,7 @@ namespace Cassandra
             try
             {
                 await RefreshNodeList().ConfigureAwait(false);
+                await _metadata.RefreshPartitionMap().ConfigureAwait(false);
                 await _metadata.RefreshKeyspaces().ConfigureAwait(false);
                 _reconnectionSchedule = _reconnectionPolicy.NewSchedule();
             }

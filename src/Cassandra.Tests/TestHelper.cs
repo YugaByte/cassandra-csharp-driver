@@ -682,6 +682,14 @@ namespace Cassandra.Tests
             {
                 return !_useRoundRobin ? _hosts : _childPolicy.NewQueryPlan(keyspace, query);
             }
+
+            public bool RequiresPartitionMap
+            {
+                get
+                {
+                    return false;
+                }
+            }
         }
     }
 }

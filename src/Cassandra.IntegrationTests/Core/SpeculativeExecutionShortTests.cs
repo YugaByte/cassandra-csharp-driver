@@ -208,6 +208,14 @@ namespace Cassandra.IntegrationTests.Core
                     yield return host;
                 }
             }
+
+            public bool RequiresPartitionMap
+            {
+                get
+                {
+                    return false;
+                }
+            }
         }
     }
 }

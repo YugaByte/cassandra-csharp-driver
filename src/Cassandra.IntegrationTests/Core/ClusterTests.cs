@@ -212,6 +212,14 @@ namespace Cassandra.IntegrationTests.Core
             {
                 return _cluster.AllHosts();
             }
+
+            public bool RequiresPartitionMap
+            {
+                get
+                {
+                    return false;
+                }
+            }
         }
     }
 }

@@ -267,5 +267,13 @@ namespace Cassandra
             }
             return hosts;
         }
+
+        public bool RequiresPartitionMap
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 }

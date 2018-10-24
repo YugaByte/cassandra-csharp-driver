@@ -30,7 +30,7 @@ namespace Cassandra
         /// <summary>
         /// The default consistency level for queries: <c>ConsistencyLevel.LocalOne</c>.
         /// </summary>    
-        public const ConsistencyLevel DefaultConsistencyLevel = ConsistencyLevel.LocalOne;
+        public const ConsistencyLevel DefaultConsistencyLevel = ConsistencyLevel.YbStrong;
 
         /// <summary>
         /// The default serial consistency level for conditional updates: <c>ConsistencyLevel.Serial</c>.

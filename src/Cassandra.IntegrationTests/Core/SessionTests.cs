@@ -362,6 +362,14 @@ namespace Cassandra.IntegrationTests.Core
             {
                 return _childPolicy.NewQueryPlan(keyspace, query);
             }
+
+            public bool RequiresPartitionMap
+            {
+                get
+                {
+                    return false;
+                }
+            }
         }
 
 

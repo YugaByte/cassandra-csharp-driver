@@ -82,5 +82,13 @@ namespace Cassandra
                 yield return hosts[(startIndex + i) % hosts.Length];
             }
         }
+
+        public bool RequiresPartitionMap
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 }

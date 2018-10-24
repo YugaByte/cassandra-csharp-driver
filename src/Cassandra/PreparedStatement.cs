@@ -274,5 +274,6 @@ namespace Cassandra
         {
             OutgoingPayload = payload;
             return this;
-        }    }
+        }
+    }
 }

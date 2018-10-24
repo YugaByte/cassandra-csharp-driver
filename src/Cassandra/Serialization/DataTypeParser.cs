@@ -80,7 +80,8 @@ namespace Cassandra.Serialization
             {"bigint", ColumnTypeCode.Bigint},
             {"decimal", ColumnTypeCode.Decimal},
             {"varint", ColumnTypeCode.Varint},
-            {"counter", ColumnTypeCode.Counter}
+            {"counter", ColumnTypeCode.Counter},
+            {"jsonb", ColumnTypeCode.Json},
         };
 
         private static readonly int SingleFqTypeNamesLength = SingleFqTypeNames.Keys.OrderByDescending(k => k.Length).First().Length;
