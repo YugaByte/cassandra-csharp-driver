@@ -269,5 +269,20 @@ namespace Cassandra.YugaByte.Tests
         {
             return prefix + type.Replace('<', '_').Replace(">", "").Replace(',', '_').Replace(" ", "").Replace("frozen_", "");
         }
+
+        public static JArray GetArray(this JObject obj, string name)
+        {
+            return (JArray)obj.GetValue(name);
+        }
+
+        public static JObject GetObject(this JObject obj, string name)
+        {
+            return (JObject)obj.GetValue(name);
+        }
+
+        public static T GetValue<T>(this JObject obj, string name)
+        {
+            return obj.GetValue(name).Value<T>();
+        }
     }
 }
