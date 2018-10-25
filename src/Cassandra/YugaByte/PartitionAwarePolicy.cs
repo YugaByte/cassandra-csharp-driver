@@ -228,9 +228,31 @@ namespace Cassandra.YugaByte
                 case ColumnTypeCode.Timeuuid:
                 case ColumnTypeCode.Date:
                 case ColumnTypeCode.Time:
-                case ColumnTypeCode.Float:
-                case ColumnTypeCode.Double:
                     writer.Write(bytes, index, count);
+                    break;
+                case ColumnTypeCode.Float:
+                    var copy = new byte[4];
+                    Array.Copy(bytes, index, copy, 0, count);
+                    Array.Reverse(copy);
+                    var floatValue = BitConverter.ToSingle(copy, 0);
+                    if (float.IsNaN(floatValue))
+                    {
+                        writer.Write(0xc07f);
+                    }
+                    else
+                    {
+                        writer.Write(bytes, index, count);
+                    }
+                    break;
+                case ColumnTypeCode.Double:
+                    var doubleValue = BitConverter.Int64BitsToDouble(IPAddress.NetworkToHostOrder(BitConverter.ToInt64(bytes, index)));
+                    if (double.IsNaN(doubleValue))
+                    {
+                        writer.Write((long)0xf87f);
+                    } else
+                    {
+                        writer.Write(bytes, index, count);
+                    }
                     break;
                 case ColumnTypeCode.Timestamp:
                     var v = IPAddress.NetworkToHostOrder(BitConverter.ToInt64(bytes, index)) * 1000;

@@ -150,6 +150,21 @@ namespace Cassandra.YugaByte.Tests
             return TimeUuid.NewId(rand.RandomBytes(6), rand.RandomBytes(2), rand.RandomDateTimeOffset());
         }
 
+        public static float RandomFloatNan(this Random rand)
+        {
+            var bytes = BitConverter.GetBytes(float.NaN);
+            bytes[1] = (byte)rand.Next(255);
+            var v = BitConverter.ToSingle(bytes, 0);
+            return v;
+        }
+
+        public static double RandomDoubleNan(this Random rand)
+        {
+            var v = BitConverter.DoubleToInt64Bits(double.NaN);
+            v ^= (long)rand.Next() << 16;
+            return BitConverter.Int64BitsToDouble(v);
+        }
+
         private delegate object RandomValueImpl(Random rand);
 
         private static IDictionary<Type, RandomValueImpl> _randomValueGenerators = new Dictionary<Type, RandomValueImpl>()
@@ -165,8 +180,8 @@ namespace Cassandra.YugaByte.Tests
             { typeof(Guid), rand => rand.RandomGuid() },
             { typeof(TimeUuid), rand => rand.RandomTimeUuid() },
             { typeof(bool), rand => (rand.Next() & 1) != 0 },
-            { typeof(float), rand => (float)rand.NextDouble() },
-            { typeof(double), rand => rand.NextDouble() },
+            { typeof(float), rand => (rand.Next() & 15) != 0 ? rand.RandomFloatNan() : (float)rand.NextDouble() },
+            { typeof(double), rand => (rand.Next() & 15) != 0 ? rand.RandomDoubleNan() : rand.NextDouble() },
             { typeof(LocalDate), rand => new LocalDate((uint)rand.Next()) },
             { typeof(LocalTime), rand => new LocalTime(rand.NextLong(0, 86399999999999L)) },
             { typeof(UDT), rand => new UDT(rand.Next(), rand.RandomString(rand.Next(256)), (float)rand.NextDouble()) },

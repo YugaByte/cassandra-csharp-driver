@@ -67,13 +67,13 @@ namespace Cassandra.YugaByte.Tests
         [Test]
         public void PrimaryKeyFloat()
         {
-            TestPrimitive("float", i => i == 0 ? float.NaN : (float)i / 3);
+            TestPrimitive("float", i => (float)i / 3);
         }
 
         [Test]
         public void PrimaryKeyDouble()
         {
-            TestPrimitive("double", i => i == 0 ? double.NaN : (double)i / 3);
+            TestPrimitive("double", i => (double)i / 3);
         }
 
         [Test]
@@ -173,7 +173,7 @@ namespace Cassandra.YugaByte.Tests
         [Test]
         public void TokenFloats()
         {
-            TestToken(typeof(float), typeof(double));
+            TestTokenEx(100, typeof(float), typeof(double));
         }
 
         [Test]
@@ -205,6 +205,11 @@ namespace Cassandra.YugaByte.Tests
 
         private void TestToken(params Type[] types)
         {
+            TestTokenEx(1, types);
+        }
+
+        private void TestTokenEx(int repeats, params Type[] types)
+        {
             var tableName = TestUtils.TypeToTableName("token_", string.Join("_", types.Select(type => TestUtils.TypeToColumnType(type))));
             _session.Execute(string.Format("DROP TABLE IF EXISTS {0}", tableName));
             var columns = string.Join(", ", types.Select((type, idx) => string.Format("h{1} {0}", TestUtils.TypeToColumnType(type), idx)));
@@ -214,21 +219,24 @@ namespace Cassandra.YugaByte.Tests
 
             var rand = new Random();
             var values = new object[types.Length];
-            for (var i = 0; i != types.Length; ++i)
+            for (var repeat = 0; repeat != repeats; ++repeat)
             {
-                values[i] = rand.RandomValue(types[i]);
-            }
-            var stmt = _session.Prepare(string.Format("INSERT INTO {0} ({1}) VALUES ({2})", tableName, primaryKey, questions)).Bind(values);
-            _session.Execute(stmt);
+                for (var i = 0; i != types.Length; ++i)
+                {
+                    values[i] = rand.RandomValue(types[i]);
+                }
+                var stmt = _session.Prepare(string.Format("INSERT INTO {0} ({1}) VALUES ({2})", tableName, primaryKey, questions)).Bind(values);
+                _session.Execute(stmt);
 
-            var token = PartitionAwarePolicy.YBHashCode(_cluster, stmt);
-            Trace.TraceInformation("Token: {0}", token);
-            var bs = _session.Prepare(string.Format("SELECT * FROM {0} WHERE TOKEN({1}) = ?", tableName, primaryKey)).Bind(token);
-            var row = _session.Execute(bs).FirstOrDefault();
-            Assert.NotNull(row);
-            for (var i = 0; i != types.Length; ++i)
-            {
-                Assert.AreEqual(values[i], row.GetValue(types[i], "h" + i));
+                var token = PartitionAwarePolicy.YBHashCode(_cluster, stmt);
+                Trace.TraceInformation("Token: {0}", token);
+                var bs = _session.Prepare(string.Format("SELECT * FROM {0} WHERE TOKEN({1}) = ?", tableName, primaryKey)).Bind(token);
+                var row = _session.Execute(bs).FirstOrDefault();
+                Assert.NotNull(row);
+                for (var i = 0; i != types.Length; ++i)
+                {
+                    Assert.AreEqual(values[i], row.GetValue(types[i], "h" + i));
+                }
             }
 
             _session.Execute(string.Format("DROP TABLE {0}", tableName));
