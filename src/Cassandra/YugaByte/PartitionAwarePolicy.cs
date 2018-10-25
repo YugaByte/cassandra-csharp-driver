@@ -13,7 +13,9 @@
 //
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -87,7 +89,7 @@ namespace Cassandra.YugaByte
             {
                 return null;
             }
-            int key = GetKey(boundStatement);
+            int key = GetKey(_cluster, boundStatement);
             if (key < 0)
             {
                 return null;
@@ -141,8 +143,9 @@ namespace Cassandra.YugaByte
             }
         }
 
-        public static int GetKey(BoundStatement boundStatement)
+        public static int GetKey(ICluster cluster, BoundStatement boundStatement)
         {
+            var serializer = ((Cluster)cluster).Serializer;
             PreparedStatement pstmt = boundStatement.PreparedStatement;
             var hashIndexes = pstmt.RoutingIndexes;
 
@@ -162,21 +165,23 @@ namespace Cassandra.YugaByte
                     foreach (var index in hashIndexes)
                     {
                         var type = variables.Columns[index].TypeCode;
-                        var value = values[index];
-                        WriteTypedValue(type, value, writer);
+                        var info = variables.Columns[index].TypeInfo;
+                        var bytes = serializer.Serialize(values[index]);
+                        WriteTypedValue(type, info, bytes, 0, bytes.Length, writer);
                     }
                     return BytesToKey(stream.ToArray());
                 }
-            } catch (InvalidCastException)
+            } catch (InvalidCastException exc)
             {
+                Trace.TraceError("Failure during hash computation: {0}", exc);
                 // We don't support cases when type of bound value does not match column type.
                 return -1;
             }
         }
 
-        public static long YBHashCode(BoundStatement boundStatement)
+        public static long YBHashCode(ICluster cluster, BoundStatement boundStatement)
         {
-            var hash = GetKey(boundStatement);
+            var hash = GetKey(cluster, boundStatement);
             if (hash == -1)
             {
                 return -1;
@@ -193,7 +198,7 @@ namespace Cassandra.YugaByte
             ulong h3 = 5 * (h >> 16);
             ulong h4 = 7 * (h & 0xffff);
             int result = (int)((h1 ^ h2 ^ h3 ^ h4) & 0xffff);
-            // Console.WriteLine("Bytes to key {0}: {1}", BitConverter.ToString(bytes).Replace("-", ""), result);
+            Trace.TraceInformation("Bytes to key {0}: {1}", BitConverter.ToString(bytes).Replace("-", ""), result);
             return result;
         }
 
@@ -202,77 +207,84 @@ namespace Cassandra.YugaByte
             return BitConverter.ToString(ba).Replace("-", "");
         }
 
-        private static void WriteTypedValue(ColumnTypeCode type, object value, BinaryWriter writer)
+        private static void WriteTypedValue(
+            ColumnTypeCode type, IColumnInfo columnInfo, 
+            byte[] bytes, int index, int count, BinaryWriter writer)
         {
             switch (type)
             {
-                case ColumnTypeCode.Ascii:
-                    writer.Write(Encoding.ASCII.GetBytes((string)value));
-                    break;
-                case ColumnTypeCode.Varchar:
-                case ColumnTypeCode.Text:
-                    writer.Write(Encoding.UTF8.GetBytes((string)value));
-                    break;
-                case ColumnTypeCode.Bigint:
-                    writer.Write(IPAddress.HostToNetworkOrder((long)value));
-                    break;
-                case ColumnTypeCode.Blob:
-                    writer.Write((byte[])value);
-                    break;
                 case ColumnTypeCode.Boolean:
-                    writer.Write((bool)value);
-                    break;
-                case ColumnTypeCode.Double:
-                    writer.Write(IPAddress.HostToNetworkOrder(BitConverter.DoubleToInt64Bits((double)value)));
-                    break;
-                case ColumnTypeCode.Float:
-                    var bytes = BitConverter.GetBytes((float)value);
-                    Array.Reverse(bytes);
-                    writer.Write(bytes);
-                    break;
+                case ColumnTypeCode.TinyInt:
+                case ColumnTypeCode.SmallInt:
                 case ColumnTypeCode.Int:
-                    writer.Write(IPAddress.HostToNetworkOrder((int)value));
+                case ColumnTypeCode.Bigint:
+                case ColumnTypeCode.Ascii:
+                case ColumnTypeCode.Text:
+                case ColumnTypeCode.Json:
+                case ColumnTypeCode.Varchar:
+                case ColumnTypeCode.Blob:
+                case ColumnTypeCode.Inet:
+                case ColumnTypeCode.Uuid:
+                case ColumnTypeCode.Timeuuid:
+                case ColumnTypeCode.Date:
+                case ColumnTypeCode.Time:
+                case ColumnTypeCode.Float:
+                case ColumnTypeCode.Double:
+                    writer.Write(bytes, index, count);
                     break;
                 case ColumnTypeCode.Timestamp:
-                    // We should multiply by 1000 after division, because passing timestamp from Cassandra to YugaByte would also
-                    // loose microsecond precision.
-                    var milliseconds = ((DateTimeOffset)value - TypeSerializer.UnixStart).Ticks / TimeSpan.TicksPerMillisecond * 1000;
-                    writer.Write(IPAddress.HostToNetworkOrder(milliseconds));
+                    var v = IPAddress.NetworkToHostOrder(BitConverter.ToInt64(bytes, index)) * 1000;
+                    writer.Write(IPAddress.HostToNetworkOrder(v));
                     break;
-                case ColumnTypeCode.Uuid:
-                    writer.Write(TypeSerializer.GuidShuffle(((Guid)value).ToByteArray()));
+                case ColumnTypeCode.List:
+                case ColumnTypeCode.Set:
+                    var childColumnDesc = ((ICollectionColumnInfo)columnInfo).GetChildType();
+                    var length = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(bytes, index));
+                    index += 4;
+                    for (var i = 0; i != length; ++i)
+                    {
+                        var size = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(bytes, index));
+                        index += 4;
+                        WriteTypedValue(childColumnDesc.TypeCode, childColumnDesc.TypeInfo, bytes, index, size, writer);
+                        index += size;
+                    }
                     break;
-                case ColumnTypeCode.Timeuuid:
-                    writer.Write(TypeSerializer.GuidShuffle(((TimeUuid)value).ToByteArray()));
+                case ColumnTypeCode.Map:
+                    var mapColumnInfo = (MapColumnInfo)columnInfo;
+                    var mapLength = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(bytes, index));
+                    index += 4;
+                    for (var i = 0; i != mapLength; ++i)
+                    {
+                        var size = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(bytes, index));
+                        index += 4;
+                        WriteTypedValue(mapColumnInfo.KeyTypeCode, mapColumnInfo.KeyTypeInfo, bytes, index, size, writer);
+                        index += size;
+
+                        size = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(bytes, index));
+                        index += 4;
+                        WriteTypedValue(mapColumnInfo.ValueTypeCode, mapColumnInfo.ValueTypeInfo, bytes, index, size, writer);
+                        index += size;
+                    }
                     break;
-                case ColumnTypeCode.Inet:
-                    writer.Write(((IPAddress)value).GetAddressBytes());
+                case ColumnTypeCode.Udt:
+                    var udtColumnInfo = (UdtColumnInfo)columnInfo;
+                    var end = index + count;
+                    for (var fieldIndex = 0; index < end; ++fieldIndex)
+                    {
+                        var size = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(bytes, index));
+                        index += 4;
+                        WriteTypedValue(udtColumnInfo.Fields[fieldIndex].TypeCode, udtColumnInfo.Fields[fieldIndex].TypeInfo, bytes, index, size, writer);
+                        index += size;
+                    }
                     break;
-                case ColumnTypeCode.Date:
-                    writer.Write(TypeSerializer.PrimitiveLocalDateSerializer.Serialize(0, (LocalDate)value));
-                    break;
-                case ColumnTypeCode.Time:
-                    writer.Write(IPAddress.HostToNetworkOrder(((LocalTime)value).TotalNanoseconds));
-                    break;
-                case ColumnTypeCode.SmallInt:
-                    writer.Write(IPAddress.HostToNetworkOrder((short)value));
-                    break;
-                case ColumnTypeCode.TinyInt:
-                    writer.Write((sbyte)value);
-                    break;
-                // Udt
                 case ColumnTypeCode.Counter:
                 case ColumnTypeCode.Custom:
                 case ColumnTypeCode.Decimal:
                 case ColumnTypeCode.Tuple:
                 case ColumnTypeCode.Varint:
-                case ColumnTypeCode.List:
-                case ColumnTypeCode.Map:
-                case ColumnTypeCode.Set:
                     throw new InvalidTypeException("Datatype " + type.ToString() + " not supported in a partition key column");
                 default:
-                    Console.WriteLine(string.Format("type={0}, value={1}, value.type={2}", type, value, value.GetType()));
-                    break;
+                    throw new InvalidTypeException("Unknown datatype " + type.ToString() + " for a partition key column");
             }
         }
 

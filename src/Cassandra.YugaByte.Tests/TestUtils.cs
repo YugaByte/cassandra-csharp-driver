@@ -2,6 +2,7 @@
 using System;
 using System.Net;
 using System.Text;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace Cassandra.YugaByte.Tests
@@ -29,6 +30,20 @@ namespace Cassandra.YugaByte.Tests
             lhs.remoteRead += rhs.remoteRead;
             lhs.remoteWrite += rhs.remoteWrite;
             return lhs;
+        }
+    }
+
+    public struct UDT
+    {
+        public int A { get; set; }
+        public string B { get; set; }
+        public float C { get; set; }
+
+        public UDT(int a, string b, float c)
+        {
+            A = a;
+            B = b;
+            C = c;
         }
     }
 
@@ -154,30 +169,70 @@ namespace Cassandra.YugaByte.Tests
             { typeof(double), rand => rand.NextDouble() },
             { typeof(LocalDate), rand => new LocalDate((uint)rand.Next()) },
             { typeof(LocalTime), rand => new LocalTime(rand.NextLong(0, 86399999999999L)) },
+            { typeof(UDT), rand => new UDT(rand.Next(), rand.RandomString(rand.Next(256)), (float)rand.NextDouble()) },
         };
 
         private static IDictionary<Type, string> _typeToColumnType = new Dictionary<Type, string>()
         {
-            { typeof(string), "TEXT" },
-            { typeof(byte[]), "BLOB" },
-            { typeof(sbyte), "TINYINT" },
-            { typeof(short), "SMALLINT" },
-            { typeof(int), "INT" },
-            { typeof(long), "BIGINT" },
-            { typeof(DateTimeOffset), "TIMESTAMP" },
-            { typeof(IPAddress), "INET" },
-            { typeof(Guid), "UUID" },
-            { typeof(TimeUuid), "TIMEUUID" },
-            { typeof(bool), "BOOLEAN" },
-            { typeof(float), "FLOAT" },
-            { typeof(double), "DOUBLE" },
-            { typeof(LocalDate), "DATE" },
-            { typeof(LocalTime), "TIME" },
+            { typeof(string), "text" },
+            { typeof(byte[]), "blob" },
+            { typeof(sbyte), "tinyint" },
+            { typeof(short), "smallint" },
+            { typeof(int), "int" },
+            { typeof(long), "bigint" },
+            { typeof(DateTimeOffset), "timestamp" },
+            { typeof(IPAddress), "inet" },
+            { typeof(Guid), "uuid" },
+            { typeof(TimeUuid), "timeuuid" },
+            { typeof(bool), "boolean" },
+            { typeof(float), "float" },
+            { typeof(double), "double" },
+            { typeof(LocalDate), "date" },
+            { typeof(LocalTime), "time" },
+            { typeof(UDT), "frozen<udt>" },
         };
 
         public static object RandomValue(this Random rand, Type type)
         {
             RandomValueImpl impl;
+            if (type.IsGenericType)
+            {
+                if (type.GetGenericTypeDefinition() == typeof(ISet<>))
+                {
+                    var resultType = typeof(SortedSet<>).MakeGenericType(type.GenericTypeArguments);
+                    var result = Activator.CreateInstance(resultType);
+                    var addMethod = resultType.GetMethod("Add");
+                    for (var left = rand.Next(16); left-- > 0;)
+                    {
+                        object randomValue = rand.RandomValue(type.GenericTypeArguments[0]);
+                        addMethod.Invoke(result, new object[] { randomValue });
+                    }
+                    return result;
+                }
+                if (type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                {
+                    var resultType = typeof(List<>).MakeGenericType(type.GenericTypeArguments);
+                    var result = (IList)Activator.CreateInstance(resultType);
+                    for (var left = rand.Next(16); left-- > 0;)
+                    {
+                        object randomValue = rand.RandomValue(type.GenericTypeArguments[0]);
+                        result.Add(randomValue);
+                    }
+                    return result;
+                }
+                if (type.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                {
+                    var resultType = typeof(SortedDictionary<,>).MakeGenericType(type.GenericTypeArguments);
+                    var result = (IDictionary)Activator.CreateInstance(resultType);
+                    for (var left = rand.Next(16); left-- > 0;)
+                    {
+                        object randomKey = rand.RandomValue(type.GenericTypeArguments[0]);
+                        object randomValue = rand.RandomValue(type.GenericTypeArguments[1]);
+                        result.Add(randomKey, randomValue);
+                    }
+                    return result;
+                }
+            }
             if (!_randomValueGenerators.TryGetValue(type, out impl))
             {
                 throw new ArgumentException("Cannot generate value for type: " + type);
@@ -188,11 +243,31 @@ namespace Cassandra.YugaByte.Tests
         public static string TypeToColumnType(Type type)
         {
             string result;
+            if (type.IsGenericType)
+            {
+                if (type.GetGenericTypeDefinition() == typeof(ISet<>))
+                {
+                    return string.Format("frozen<set<{0}>>", TypeToColumnType(type.GenericTypeArguments[0]));
+                }
+                if (type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                {
+                    return string.Format("frozen<list<{0}>>", TypeToColumnType(type.GenericTypeArguments[0]));
+                }
+                if (type.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                {
+                    return string.Format("frozen<map<{0}, {1}>>", TypeToColumnType(type.GenericTypeArguments[0]), TypeToColumnType(type.GenericTypeArguments[1]));
+                }
+            }
             if (!_typeToColumnType.TryGetValue(type, out result))
             {
                 throw new ArgumentException("Cannot convert type to column type: " + type);
             }
             return result;
+        }
+
+        public static string TypeToTableName(string prefix, string type)
+        {
+            return prefix + type.Replace('<', '_').Replace(">", "").Replace(',', '_').Replace(" ", "").Replace("frozen_", "");
         }
     }
 }

@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Net;
 using System.Linq;
-using System.Text;
+using System.Collections.Generic;
 using NUnit.Framework;
 
 namespace Cassandra.YugaByte.Tests
@@ -24,145 +24,188 @@ namespace Cassandra.YugaByte.Tests
             var ip = Environment.GetEnvironmentVariable("YB_CLUSTER_ADDRESS");
             _cluster = Cluster.Builder().AddContactPoint(ip).Build();
             _session = _cluster.Connect();
-            _session.Execute("CREATE KEYSPACE IF NOT EXISTS store");
-            _session.Execute("USE store");
+            _session.Execute("CREATE KEYSPACE IF NOT EXISTS test");
+            _session.Execute("USE test");
         }
 
         [Test]
-        public void TimeHashKey()
+        public void PrimaryKeyTime()
         {
             TestPrimitive("time", i => new LocalTime(i * 57809));
         }
 
         [Test]
-        public void DateHashKey()
+        public void PrimaryKeyDate()
         {
             TestPrimitive("date", i => new LocalDate(1900 * i, 1 + i % 12, 1 + i % 28));
         }
 
         [Test]
-        public void InetHashKey()
+        public void PrimaryKeyInet()
         {
             TestPrimitive("inet", i => IPAddress.Parse(string.Format("{0}.1.{0}.2", i)));
         }
 
         [Test]
-        public void TimeUuidHashKey()
+        public void PrimaryKeyTimeUuid()
         {
             TestPrimitive("timeuuid", CreateTimeUuidByIndex);
         }
 
         [Test]
-        public void UuidHashKey()
+        public void PrimaryKeyUuid()
         {
             TestPrimitive("uuid", CreateGuidByIndex);
         }
 
         [Test]
-        public void TimestampHashKey()
+        public void PrimaryKeyTimestamp()
         {
             TestPrimitive("timestamp", i => CreateTimestampByIndex(i));
         }
 
         [Test]
-        public void FloatHashKey()
+        public void PrimaryKeyFloat()
         {
             TestPrimitive("float", i => i == 0 ? float.NaN : (float)i / 3);
         }
 
         [Test]
-        public void DoubleHashKey()
+        public void PrimaryKeyDouble()
         {
             TestPrimitive("double", i => i == 0 ? double.NaN : (double)i / 3);
         }
 
         [Test]
-        public void BlobHashKey()
+        public void PrimaryKeyBlob()
         {
             TestPrimitive("blob", i => BitConverter.GetBytes(i));
         }
 
         [Test]
-        public void TextHashKey()
+        public void PrimaryKeyText()
         {
             TestPrimitive("text", i => "key_" + i);
         }
 
         [Test]
-        public void TinyintHashKey()
+        public void PrimaryKeyTinyint()
         {
             TestPrimitive("tinyint", i => (sbyte)i);
         }
 
         [Test]
-        public void SmallintHashKey()
+        public void PrimaryKeySmallint()
         {
             TestPrimitive("smallint", i => (short)i);
         }
 
         [Test]
-        public void IntHashKey()
+        public void PrimaryKeyInt()
         {
             TestPrimitive("int", i => i);
         }
 
         [Test]
-        public void BigintHashKey()
+        public void PrimaryKeyBigint()
         {
             TestPrimitive("bigint", i => (long)i);
         }
 
         [Test]
-        public void VarcharHashKey()
+        public void PrimaryKeyVarchar()
         {
             TestPrimitive("varchar", i => "key_" + i);
         }
 
         [Test]
-        public void BooleanHashKey()
+        public void PrimaryKeyBoolean()
         {
             TestPrimitive("boolean", i => (i & 1) != 0, 2);
         }
 
         [Test]
-        public void TextAndBlobHash()
+        public void PrimaryKeyFrozenList()
+        {
+            TestPrimitive("frozen<list<int>>", i => new int[] { i, i * 2, i * 3 });
+        }
+
+        [Test]
+        public void PrimaryKeyFrozenSet()
+        {
+            TestPrimitive("frozen<set<text>>", i => new string[] { "a_" + i, "b_" + i });
+        }
+
+        [Test]
+        public void PrimaryKeyFrozenMap()
+        {
+            TestPrimitive("frozen<map<int, text>>", i => new Dictionary<int, string>() { { i, "a_" + i }, { i + 1, "b_" + i } });
+        }
+
+        [Test]
+        public void PrimaryKeyFrozenMapList()
+        {
+            TestPrimitive(
+                "frozen<map<int, frozen<list<text>>>>", 
+                i => new Dictionary<int, string[]>() {
+                    { i, new string[] { "a_" + i } },
+                    { i + 1, new string[] {"b_" + i, "c_" + i } } });
+        }
+
+        [Test]
+        public void TokenTextAndBlob()
         {
             TestToken(typeof(string), typeof(string), typeof(byte[]), typeof(string));
         }
 
         [Test]
-        public void IntAndTextHash()
+        public void TokenIntAndText()
         {
             TestToken(typeof(sbyte), typeof(short), typeof(string), typeof(int), typeof(long));
         }
 
         [Test]
-        public void MixedHash()
+        public void TokenMixed()
         {
             TestToken(typeof(int), typeof(DateTimeOffset), typeof(IPAddress), typeof(Guid), typeof(TimeUuid));
         }
 
         [Test]
-        public void FloatsHash()
+        public void TokenFloats()
         {
             TestToken(typeof(float), typeof(double));
         }
 
         [Test]
-        public void DateTimeHash()
+        public void TokenDateTime()
         {
             TestToken(typeof(LocalDate), typeof(LocalTime));
         }
 
         [Test]
-        public void BoolHash()
+        public void TokenBool()
         {
             TestToken(typeof(bool));
         }
 
+        [Test]
+        public void TokenFrozen()
+        {
+            _session.Execute("DROP TYPE IF EXISTS udt");
+            _session.Execute("CREATE TYPE udt(a int, b text, c float)");
+            _session.UserDefinedTypes.Define(
+                UdtMap.For<UDT>("udt")
+                    .Map(v => v.A, "a")
+                    .Map(v => v.B, "b")
+                    .Map(v => v.C, "c")
+            );
+
+            TestToken(typeof(IDictionary<int, string>), typeof(ISet<double>), typeof(IEnumerable<ISet<string>>), typeof(UDT));
+        }
+
         private void TestToken(params Type[] types)
         {
-            var tableName = string.Join("_", types.Select(type => TestUtils.TypeToColumnType(type)));
+            var tableName = TestUtils.TypeToTableName("token_", string.Join("_", types.Select(type => TestUtils.TypeToColumnType(type))));
             _session.Execute(string.Format("DROP TABLE IF EXISTS {0}", tableName));
             var columns = string.Join(", ", types.Select((type, idx) => string.Format("h{1} {0}", TestUtils.TypeToColumnType(type), idx)));
             var primaryKey = string.Join(", ", types.Select((type, idx) => "h" + idx));
@@ -178,7 +221,7 @@ namespace Cassandra.YugaByte.Tests
             var stmt = _session.Prepare(string.Format("INSERT INTO {0} ({1}) VALUES ({2})", tableName, primaryKey, questions)).Bind(values);
             _session.Execute(stmt);
 
-            var token = PartitionAwarePolicy.YBHashCode(stmt);
+            var token = PartitionAwarePolicy.YBHashCode(_cluster, stmt);
             Trace.TraceInformation("Token: {0}", token);
             var bs = _session.Prepare(string.Format("SELECT * FROM {0} WHERE TOKEN({1}) = ?", tableName, primaryKey)).Bind(token);
             var row = _session.Execute(bs).FirstOrDefault();
@@ -355,7 +398,7 @@ namespace Cassandra.YugaByte.Tests
 
         private void TestPartition(string type, CreateKey createKey, int totalKeys)
         {
-            var tableName = "simple_" + type;
+            var tableName = TestUtils.TypeToTableName("simple_", type);
             _session.Execute(string.Format("CREATE TABLE IF NOT EXISTS {0}(id {1} PRIMARY KEY, data varchar)", tableName, type));
             _session.Cluster.Metadata.RefreshSchema();
             Trace.TraceInformation("Created table {0}", tableName);

@@ -53,6 +53,12 @@ namespace Cassandra
         /// <inheritdoc />
         public event Action<Host> HostRemoved;
 
+        internal Serializer Serializer { get
+            {
+                return _serializer;
+            }
+        }
+
         /// <summary>
         /// Gets the control connection used by the cluster
         /// </summary>
