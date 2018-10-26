@@ -77,8 +77,8 @@ namespace Cassandra
         /// Similar to <c>One</c> but only within the DC the coordinator is in.
         /// </summary>
         LocalOne = 0x000A,
-        YbConsistentPrefix = One,
-        YbStrong = Quorum,
+        YBConsistentPrefix = One,
+        YBStrong = Quorum,
     }
 
     public static class ConsistencyLevelMethod
@@ -86,9 +86,9 @@ namespace Cassandra
         /// <summary>
         /// Whether or not this consistency level corresponds to YB strong consistency.
         /// </summary> 
-        public static bool IsStrong(this ConsistencyLevel self)
+        public static bool IsStrong(this ConsistencyLevel level)
         {
-            return self == ConsistencyLevel.Quorum || self == ConsistencyLevel.LocalOne;
+            return level == ConsistencyLevel.Quorum || level == ConsistencyLevel.LocalOne;
         }
     }
 }

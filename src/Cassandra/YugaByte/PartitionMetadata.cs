@@ -31,19 +31,12 @@ namespace Cassandra.YugaByte
         // to be able to distinguish the case where the leader is missing so the hosts are all followers.
         public IEnumerable<Host> Hosts { get; private set; }
 
-        public bool Valid {
-            get
-            {
-                return StartKey >= 0;
-            }
-        }
-
         /// <summary>Creates a new PartitionMetadata</summary>
         public PartitionMetadata(int startKey, int endKey, IList<Host> hosts)
         {
             StartKey = startKey;
             EndKey = endKey;
-            Hosts = (hosts != null) ? new List<Host>(hosts) : Enumerable.Empty<Host>();
+            Hosts = hosts != null ? new List<Host>(hosts) : Enumerable.Empty<Host>();
         }
 
         public override string ToString()

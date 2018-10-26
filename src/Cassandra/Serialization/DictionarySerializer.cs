@@ -36,7 +36,6 @@ namespace Cassandra.Serialization
             var valueType = GetClrType(mapInfo.ValueTypeCode, mapInfo.ValueTypeInfo);
             var count = DecodeCollectionLength((ProtocolVersion)protocolVersion, buffer, ref offset);
             var dicType = typeof(SortedDictionary<,>).MakeGenericType(keyType, valueType);
-            IDictionary result;
             object comparer = null;
             // system.partitions contains dictonary with IPAddress key, that is not comparable.
             // So use custom comparer for it.
@@ -44,7 +43,14 @@ namespace Cassandra.Serialization
             {
                 comparer = IPAddressComparer.Instance;
             }
-            result = (IDictionary)(comparer == null ? Activator.CreateInstance(dicType) : Activator.CreateInstance(dicType, comparer));
+            IDictionary result;
+            if (comparer == null)
+            {
+                result = (IDictionary)Activator.CreateInstance(dicType);
+            } else
+            {
+                result = (IDictionary)Activator.CreateInstance(dicType, comparer);
+            }
             for (var i = 0; i < count; i++)
             {
                 var keyLength = DecodeCollectionLength((ProtocolVersion)protocolVersion, buffer, ref offset);

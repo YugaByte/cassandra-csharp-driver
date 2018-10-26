@@ -26,8 +26,17 @@ namespace Cassandra.YugaByte
 {
     public class PartitionAwarePolicy : ILoadBalancingPolicy
     {
-        private readonly ILoadBalancingPolicy _childPolicy = new DCAwareRoundRobinPolicy(null, int.MaxValue);
+        private readonly ILoadBalancingPolicy _childPolicy;
         private ICluster _cluster;
+
+        public PartitionAwarePolicy() : this(new DCAwareRoundRobinPolicy(null, int.MaxValue))
+        {
+        }
+
+        public PartitionAwarePolicy(ILoadBalancingPolicy childPolicy)
+        {
+            _childPolicy = childPolicy;
+        }
 
         public void Initialize(ICluster cluster)
         {
@@ -104,7 +113,7 @@ namespace Cassandra.YugaByte
 
             var hosts = Enumerable.ToArray(tableSplitMetadata.GetHosts(key));
             var consistencyLevel = boundStatement.ConsistencyLevel ?? _cluster.Configuration.QueryOptions.GetConsistencyLevel();
-            if (consistencyLevel == ConsistencyLevel.YbConsistentPrefix)
+            if (consistencyLevel == ConsistencyLevel.YBConsistentPrefix)
             {
                 Shuffle(hosts);
             }

@@ -495,10 +495,10 @@ namespace Cassandra
             {
                 return;
             }
-            var address2hosts = new Dictionary<IPAddress, Host>();
+            var addressToHosts = new Dictionary<IPAddress, Host>();
             foreach (var host in AllHosts())
             {
-                address2hosts.Add(host.Address.Address, host);
+                addressToHosts.Add(host.Address.Address, host);
             }
             var rows = await ControlConnection.QueryAsync(SelectPartitions);
             var splitsSource = new Dictionary<string, List<PartitionMetadata>>();
@@ -512,7 +512,7 @@ namespace Cassandra
                 foreach (var entry in replicas)
                 {
                     Host host;
-                    if (!address2hosts.TryGetValue(entry.Key, out host))
+                    if (!addressToHosts.TryGetValue(entry.Key, out host))
                     {
                         continue;
                     }
