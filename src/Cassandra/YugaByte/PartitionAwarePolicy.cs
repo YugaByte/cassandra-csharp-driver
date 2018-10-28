@@ -1,5 +1,4 @@
-﻿
-// Copyright (c) YugaByte, Inc.
+﻿// Copyright (c) YugaByte, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 // in compliance with the License.  You may obtain a copy of the License at
@@ -13,14 +12,11 @@
 //
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
-using Cassandra.Serialization;
 
 namespace Cassandra.YugaByte
 {
@@ -28,10 +24,6 @@ namespace Cassandra.YugaByte
     {
         private readonly ILoadBalancingPolicy _childPolicy;
         private ICluster _cluster;
-
-        public PartitionAwarePolicy() : this(new DCAwareRoundRobinPolicy(null, int.MaxValue))
-        {
-        }
 
         public PartitionAwarePolicy(ILoadBalancingPolicy childPolicy)
         {
