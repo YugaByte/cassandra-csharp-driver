@@ -13,10 +13,25 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
+//   The following only applies to changes made to this file as part of YugaByte development.
+//
+//      Portions Copyright (c) YugaByte, Inc.
+//
+//   Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+//   except in compliance with the License.  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software distributed under the
+//   License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+//   either express or implied.  See the License for the specific language governing permissions
+//   and limitations under the License.
+//
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net;
 
 namespace Cassandra.Serialization
 {
@@ -34,7 +49,21 @@ namespace Cassandra.Serialization
             var valueType = GetClrType(mapInfo.ValueTypeCode, mapInfo.ValueTypeInfo);
             var count = DecodeCollectionLength((ProtocolVersion)protocolVersion, buffer, ref offset);
             var dicType = typeof(SortedDictionary<,>).MakeGenericType(keyType, valueType);
-            var result = (IDictionary)Activator.CreateInstance(dicType);
+            object comparer = null;
+            // system.partitions contains dictonary with IPAddress key, that is not comparable.
+            // So use custom comparer for it.
+            if (keyType == typeof(IPAddress))
+            {
+                comparer = IPAddressComparer.Instance;
+            }
+            IDictionary result;
+            if (comparer == null)
+            {
+                result = (IDictionary)Activator.CreateInstance(dicType);
+            } else
+            {
+                result = (IDictionary)Activator.CreateInstance(dicType, comparer);
+            }
             for (var i = 0; i < count; i++)
             {
                 var keyLength = DecodeCollectionLength((ProtocolVersion)protocolVersion, buffer, ref offset);
@@ -86,6 +115,30 @@ namespace Cassandra.Serialization
             bufferList.AddLast(keyLengthBuffer);
             bufferList.AddLast(keyBuffer);
             return keyLengthBuffer.Length + keyBuffer.Length;
+        }
+    }
+
+    internal class IPAddressComparer : IComparer<IPAddress>
+    {
+        public static readonly IPAddressComparer Instance = new IPAddressComparer();
+
+        public int Compare(IPAddress lhs, IPAddress rhs)
+        {
+            return Compare(lhs.GetAddressBytes(), rhs.GetAddressBytes());
+        }
+
+        public int Compare(byte[] lhs, byte[] rhs)
+        {
+            var minLen = Math.Min(lhs.Length, rhs.Length);
+            for (var i = 0; i != minLen; ++i)
+            {
+                int delta = lhs[i] - rhs[i];
+                if (delta != 0)
+                {
+                    return delta;
+                }
+            }
+            return lhs.Length - rhs.Length;
         }
     }
 }

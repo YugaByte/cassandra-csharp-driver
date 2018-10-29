@@ -1,6 +1,6 @@
 # DataStax C# Driver for Apache Cassandra
 
-A modern, [feature-rich][features] and highly tunable C# client library for Apache Cassandra (1.2+) using exclusively Cassandra's binary protocol and Cassandra Query Language v3. _Use the [DSE C# driver][dse-driver] for better compatibility and support for DataStax Enterprise_.
+A modern, [feature-rich][features] and highly tunable C# client library for Apache Cassandra (1.2+) using exclusively Cassandra's binary protocol and Cassandra Query Language v3.
 
 The driver supports .NET Framework 4.5+ and .NET Core 1+.
 
@@ -36,7 +36,7 @@ PM> Install-Package CassandraCSharpDriver
 
 ## Getting Help
 
-You can use the project [Mailing list][mailinglist] or create a ticket on the [Jira issue tracker][jira]. Additionally, you can use the `#datastax-drivers` channel in the [DataStax Academy Slack][slack].
+You can use the project [Mailing list][mailinglist] or create a ticket on the [Jira issue tracker][jira].
 
 ## Upgrading from previous versions
 

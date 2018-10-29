@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cassandra.Tests", "Cassandr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cassandra.IntegrationTests", "Cassandra.IntegrationTests\Cassandra.IntegrationTests.csproj", "{6E9E4BBB-7FFD-4337-8639-6F52DCACD591}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cassandra.YugaByte.Tests", "Cassandra.YugaByte.Tests\Cassandra.YugaByte.Tests.csproj", "{E6B3676D-4F0B-4033-99F7-3D678C5F2B84}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,8 +29,15 @@ Global
 		{6E9E4BBB-7FFD-4337-8639-6F52DCACD591}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E9E4BBB-7FFD-4337-8639-6F52DCACD591}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E9E4BBB-7FFD-4337-8639-6F52DCACD591}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6B3676D-4F0B-4033-99F7-3D678C5F2B84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6B3676D-4F0B-4033-99F7-3D678C5F2B84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6B3676D-4F0B-4033-99F7-3D678C5F2B84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6B3676D-4F0B-4033-99F7-3D678C5F2B84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0C0DEA39-E5F3-4A52-9A69-38D8BE0C7F2C}
 	EndGlobalSection
 EndGlobal

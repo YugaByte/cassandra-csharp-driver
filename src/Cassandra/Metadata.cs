@@ -13,6 +13,20 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
+//   The following only applies to changes made to this file as part of YugaByte development.
+//
+//      Portions Copyright (c) YugaByte, Inc.
+//
+//   Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+//   except in compliance with the License.  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software distributed under the
+//   License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+//   either express or implied.  See the License for the specific language governing permissions
+//   and limitations under the License.
+//
 
 using System;
 using System.Collections.Concurrent;
@@ -23,6 +37,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Cassandra.Requests;
 using Cassandra.Tasks;
+using Cassandra.YugaByte;
 
 namespace Cassandra
 {
@@ -34,6 +49,7 @@ namespace Cassandra
     {
         private const string SelectSchemaVersionPeers = "SELECT schema_version FROM system.peers";
         private const string SelectSchemaVersionLocal = "SELECT schema_version FROM system.local";
+        private const string SelectPartitions = "SELECT keyspace_name, table_name, start_key, end_key, replica_addresses FROM system.partitions";
         private static readonly Logger Logger = new Logger(typeof(ControlConnection));
         private volatile TokenMap _tokenMap;
         private volatile ConcurrentDictionary<string, KeyspaceMetadata> _keyspaces = new ConcurrentDictionary<string,KeyspaceMetadata>();
@@ -62,6 +78,8 @@ namespace Cassandra
         internal string Partitioner { get; set; }
 
         internal Hosts Hosts { get; private set; }
+
+        public IDictionary<string, TableSplitMetadata> TableSplitMetadata { get; private set; }
 
         internal Metadata(Configuration configuration)
         {
@@ -313,6 +331,7 @@ namespace Cassandra
         /// </summary>
         public bool RefreshSchema(string keyspace = null, string table = null)
         {
+            TaskHelper.WaitToComplete(RefreshPartitionMap(), Configuration.ClientOptions.QueryAbortTimeout);
             if (table == null)
             {
                 //Refresh all the keyspaces and tables information
@@ -463,6 +482,7 @@ namespace Cassandra
                     Thread.Sleep(500);
                 }
                 Logger.Info(String.Format("Waited for schema agreement, still {0} schema versions in the cluster.", totalVersions));
+                TaskHelper.WaitToComplete(RefreshPartitionMap(), Configuration.ClientOptions.QueryAbortTimeout);
             }
             catch (Exception ex)
             {
@@ -478,6 +498,75 @@ namespace Cassandra
         internal void SetCassandraVersion(Version version)
         {
             _schemaParser = SchemaParser.GetInstance(version, this, GetUdtDefinitionAsync, _schemaParser);
+        }
+
+        /// <summary>
+        /// Refresh the partition map for all tables.
+        /// </summary>
+        internal async Task RefreshPartitionMap()
+        {
+            if (!Configuration.Policies.LoadBalancingPolicy.RequiresPartitionMap)
+            {
+                return;
+            }
+            var addressToHosts = new Dictionary<IPAddress, Host>();
+            foreach (var host in AllHosts())
+            {
+                addressToHosts.Add(host.Address.Address, host);
+            }
+            var rows = await ControlConnection.QueryAsync(SelectPartitions);
+            var splitsSource = new Dictionary<string, List<PartitionMetadata>>();
+            foreach (var row in rows)
+            {
+                var keyspace = row.GetValue<string>("keyspace_name");
+                var tableName = row.GetValue<string>("table_name");
+                var fullTableName = keyspace + "." + tableName;
+                var replicas = row.GetValue<IDictionary<IPAddress, string>>("replica_addresses");
+                var hosts = new List<Host>(replicas.Count);
+                foreach (var entry in replicas)
+                {
+                    Host host;
+                    if (!addressToHosts.TryGetValue(entry.Key, out host))
+                    {
+                        continue;
+                    }
+                    var role = entry.Value;
+                    if (role == "LEADER")
+                    {
+                        hosts.Insert(0, host);
+                    }
+                    else if (role == "READ_REPLICA" || role == "FOLLOWER")
+                    {
+                        hosts.Add(host);
+                    }
+                }
+
+                var startKey = BytesToHashCode(row.GetValue<byte[]>("start_key"));
+                var endKey = BytesToHashCode(row.GetValue<byte[]>("end_key"));
+                List<PartitionMetadata> partitions;
+                if (!splitsSource.TryGetValue(fullTableName, out partitions))
+                {
+                    partitions = new List<PartitionMetadata>();
+                    splitsSource.Add(fullTableName, partitions);
+                }
+                partitions.Add(new PartitionMetadata(startKey, endKey, hosts));
+            }
+            var splits = new Dictionary<string, TableSplitMetadata>();
+            foreach (var entry in splitsSource)
+            {
+                splits.Add(entry.Key, new TableSplitMetadata(entry.Value));
+            }
+            TableSplitMetadata = splits;
+        }
+
+        private static int BytesToHashCode(byte[] input)
+        {
+            int result = 0;
+            foreach (var b in input)
+            {
+                result = (result << 8) | b;
+            }
+            return result;
         }
     }
 }
