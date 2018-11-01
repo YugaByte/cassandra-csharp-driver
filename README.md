@@ -229,10 +229,12 @@ You can use Visual Studio or msbuild to build the solution.
 
 Since YugaByte cannot be started at Windows, YugaByte cluster should be launched separately and be accessible from testing machine.
 Also additional flag should be specified for this cluster:
---cql_proxy_webserver_port 8888
+
+`--cql_proxy_webserver_port 8888`
+
 CQL proxy metrics is used by tests to verify that corresponding operations were handled locally, i.e. partition awary policy works correctly.
 
-After cluster is created, his endpoint should be set in YB_CLUSTER_ADDRESS environment variable.
+After cluster is created, his endpoint should be set in `YB_CLUSTER_ADDRESS` environment variable.
 
 YugaByte specific tests could be found in project Cassandra.YugaByte.Tests/Cassandra.YugaByte.Tests.csproj
 
