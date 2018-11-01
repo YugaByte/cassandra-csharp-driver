@@ -225,6 +225,19 @@ You can use Visual Studio or msbuild to build the solution.
 
 [Check the documentation for building the driver from source and running the tests](https://github.com/datastax/csharp-driver/wiki/Building-and-running-tests).
 
+## Running YugaByte specific tests
+
+Since YugaByte cannot be started at Windows, YugaByte cluster should be launched separately and be accessible from testing machine.
+Also additional flag should be specified for this cluster:
+
+`--cql_proxy_webserver_port 8888`
+
+CQL proxy metrics is used by tests to verify that corresponding operations were handled locally, i.e. partition awary policy works correctly.
+
+After cluster is created, his endpoint should be set in `YB_CLUSTER_ADDRESS` environment variable.
+
+YugaByte specific tests could be found in project Cassandra.YugaByte.Tests/Cassandra.YugaByte.Tests.csproj
+
 ## License
 
 Copyright 2012-2018, DataStax.
