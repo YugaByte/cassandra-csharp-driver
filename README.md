@@ -9,12 +9,12 @@ The driver supports .NET Framework 4.5+ and .NET Core 1+.
 [Get it on Nuget][nuget]
 
 ```bash
-PM> Install-Package CassandraCSharpDriver
+PM> Install-Package YugaByteCassandraCSharpDriver
 ```
 
 [![Build status](https://travis-ci.org/datastax/csharp-driver.svg?branch=master)](https://travis-ci.org/datastax/csharp-driver)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/ri1olv8bl7b7yk7y/branch/master?svg=true)](https://ci.appveyor.com/project/DataStax/csharp-driver/branch/master)
-[![Latest stable](https://img.shields.io/nuget/v/CassandraCSharpDriver.svg)](https://www.nuget.org/packages/CassandraCSharpDriver)
+[![Latest stable](https://img.shields.io/nuget/v/YugaByteCassandraCSharpDriver.svg)](https://www.nuget.org/packages/YugaByteCassandraCSharpDriver)
 
 ## Features
 
@@ -258,7 +258,7 @@ limitations under the License.
   [docindex]: https://docs.datastax.com/en/developer/csharp-driver/latest/
   [features]: https://docs.datastax.com/en/developer/csharp-driver/latest/features/
   [getting-started]: https://academy.datastax.com/resources/getting-started-apache-cassandra-and-c-net
-  [nuget]: https://nuget.org/packages/CassandraCSharpDriver/
+  [nuget]: https://nuget.org/packages/YugaByteCassandraCSharpDriver/
   [mailinglist]: https://groups.google.com/a/lists.datastax.com/forum/#!forum/csharp-driver-user
   [jira]: https://datastax-oss.atlassian.net/projects/CSHARP/issues
   [udt]: https://docs.datastax.com/en/dse/6.0/cql/cql/cql_using/useInsertUDT.html
