@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>A modern, feature-rich and highly tunable C# client library for YugaByte DB and Apache Cassandra</Description>
+    <Description>A modern, feature-rich and highly tunable C# client library for YugaByte DB</Description>
     <Copyright>Copyright © 2018 by YugaByte, Copyright © 2018 by DataStax</Copyright>
-    <AssemblyTitle>YugaByte C# Driver for Apache Cassandra</AssemblyTitle>
+    <AssemblyTitle>YugaByte C# Driver for YugaByte DB</AssemblyTitle>
     <AssemblyVersion>3.99.0.0</AssemblyVersion>
     <FileVersion>3.6.0.0</FileVersion>
     <VersionPrefix>3.6.0</VersionPrefix>
@@ -12,11 +12,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>YugaByte.Cassandra</AssemblyName>
-    <Product>YugaByte C# Driver for Apache Cassandra</Product>
+    <Product>YugaByte C# Driver for YugaByte DB</Product>
     <AssemblyOriginatorKeyFile>../../../yugabyte.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <PackageId>YugaByteCassandraCSharpDriver</PackageId>
-    <Title>YugaByte C# Driver for Apache Cassandra</Title>
+    <Title>YugaByte C# Driver for YugaByte DB</Title>
     <PackageTags>cassandra;apache;datastax;driver;client;database;nosql;dotnet;netcore;db;yugabyte</PackageTags>
     <PackageLicenseUrl>https://github.com/yugabyte/cassandra-csharp-driver/blob/master/LICENSE</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/yugabyte/cassandra-csharp-driver</RepositoryUrl>
