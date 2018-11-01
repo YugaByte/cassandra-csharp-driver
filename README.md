@@ -1,6 +1,6 @@
 # YugaByte C# Driver for Apache Cassandra
 
-A modern, [feature-rich][features] and highly tunable C# client library for Apache Cassandra (1.2+) using exclusively Cassandra's binary protocol and Cassandra Query Language v3.
+A modern, [feature-rich][features] and highly tunable C# client library for YugaByte DB using exclusively Cassandra's binary protocol and Cassandra Query Language v3.
 
 The driver supports .NET Framework 4.5+ and .NET Core 1+.
 
