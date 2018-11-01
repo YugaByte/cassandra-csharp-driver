@@ -252,7 +252,7 @@ limitations under the License.
   [apidocs]: https://docs.datastax.com/en/latest-csharp-driver-api/
   [docindex]: https://docs.datastax.com/en/developer/csharp-driver/latest/
   [features]: https://docs.datastax.com/en/developer/csharp-driver/latest/features/
-  [getting-started]: https://academy.datastax.com/resources/getting-started-apache-cassandra-and-c-net
+  [getting-started]: https://docs.yugabyte.com/latest/develop/client-drivers/csharp/
   [nuget]: https://nuget.org/packages/YugaByteCassandraCSharpDriver/
   [mailinglist]: https://groups.google.com/a/lists.datastax.com/forum/#!forum/csharp-driver-user
   [jira]: https://datastax-oss.atlassian.net/projects/CSHARP/issues
