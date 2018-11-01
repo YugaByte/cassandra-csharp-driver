@@ -1,4 +1,4 @@
-# YugaByte C# Driver for Apache Cassandra
+# YugaByte C# Driver for YugaByte DB's Cassandra-compatible YCQL API
 
 A modern, [feature-rich][features] and highly tunable C# client library for YugaByte DB using exclusively Cassandra's binary protocol and Cassandra Query Language v3.
 
