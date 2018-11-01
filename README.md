@@ -12,8 +12,7 @@ The driver supports .NET Framework 4.5+ and .NET Core 1+.
 PM> Install-Package YugaByteCassandraCSharpDriver
 ```
 
-[![Build status](https://travis-ci.org/datastax/csharp-driver.svg?branch=master)](https://travis-ci.org/datastax/csharp-driver)
-[![Windows Build status](https://ci.appveyor.com/api/projects/status/ri1olv8bl7b7yk7y/branch/master?svg=true)](https://ci.appveyor.com/project/DataStax/csharp-driver/branch/master)
+
 [![Latest stable](https://img.shields.io/nuget/v/YugaByteCassandraCSharpDriver.svg)](https://www.nuget.org/packages/YugaByteCassandraCSharpDriver)
 
 ## Features
@@ -36,14 +35,11 @@ PM> Install-Package YugaByteCassandraCSharpDriver
 
 ## Getting Help
 
-You can use the project [Mailing list][mailinglist] or create a ticket on the [Jira issue tracker][jira].
+Please report any issues on github.
 
 ## Upgrading from previous versions
 
-If you are upgrading from previous versions of the driver, [visit the Upgrade Guide][upgrade-guide].
 
-If you are upgrading to [DataStax Enterprise][dse], use the [DSE C# driver][dse-driver] for more features and better
-compatibility.
 
 ## Basic Usage
 
@@ -209,15 +205,14 @@ var statement = new SimpleStatement(query)
 
 ## Compatibility
 
-- Apache Cassandra versions 2.0 and above.
-- DataStax Enterprise versions 4.5 and above.
+- YugaByte DB versions 1.1 and above.
 - .NET Framework versions 4.5 and above and .NET Core versions 1.0 and above.
 
-Note: DataStax products do not support big-endian systems.
+Note: This driver does not support big-endian systems.
 
 ## Feedback Requested
 
-**Help us focus our efforts!** Provide your input on the [Platform and Runtime Survey][survey] (we kept it short).
+Please provide the feedback by opening a github issue.
 
 ## Building and running the tests
 
@@ -240,7 +235,7 @@ YugaByte specific tests could be found in project Cassandra.YugaByte.Tests/Cassa
 
 ## License
 
-Copyright 2012-2018, DataStax.
+Copyright 2018, YugaByte, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
