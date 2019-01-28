@@ -1,6 +1,7 @@
 title:    DataStax C# Driver
 summary:  DataStax C# Driver for Apache Cassandra
 theme:    datastax
+swiftype_drivers: csharpdrivers
 sections:
   - title:    Features
     prefix:   /features
@@ -35,13 +36,16 @@ api_docs:
   3.4: http://docs.datastax.com/en/drivers/csharp/3.4
   3.5: http://docs.datastax.com/en/drivers/csharp/3.5
   3.6: http://docs.datastax.com/en/drivers/csharp/3.6
+  3.7: http://docs.datastax.com/en/drivers/csharp/3.7
 checks:
   external_links:
     exclude:
       - 'https://ci.appveyor.com/api/projects/status/ri1olv8bl7b7yk7y/branch/master?svg=true'
 versions:
-  - name: '3.6'
+  - name: '3.7'
     ref: 'master'
+  - name: '3.6'
+    ref: '3.6'
   - name: '3.5'
     ref: '3.5'
   - name: '3.4'
