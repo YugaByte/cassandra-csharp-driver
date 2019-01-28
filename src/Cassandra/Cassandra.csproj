@@ -4,8 +4,8 @@
     <Copyright>Copyright © 2018 by YugaByte, Copyright © 2018 by DataStax</Copyright>
     <AssemblyTitle>YugaByte C# Driver for YugaByte DB</AssemblyTitle>
     <AssemblyVersion>3.99.0.0</AssemblyVersion>
-    <FileVersion>3.6.0.0</FileVersion>
-    <VersionPrefix>3.6.0</VersionPrefix>
+    <FileVersion>3.7.0.0</FileVersion>
+    <VersionPrefix>3.7.0</VersionPrefix>
     <Authors>YugaByte</Authors>
     <TargetFrameworks>net45;netstandard1.5</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>

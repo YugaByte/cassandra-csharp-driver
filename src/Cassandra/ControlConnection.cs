@@ -52,7 +52,7 @@ namespace Cassandra
 
         private readonly Metadata _metadata;
         private volatile Host _host;
-        private volatile Connection _connection;
+        private volatile IConnection _connection;
         // ReSharper disable once InconsistentNaming
         private static readonly Logger _logger = new Logger(typeof (ControlConnection));
         private readonly Configuration _config;
@@ -126,7 +126,7 @@ namespace Cassandra
 
             foreach (var host in hosts)
             {
-                var connection = new Connection(_serializer, host.Address, _config);
+                IConnection connection = new Connection(_serializer, host.Address, _config);
                 try
                 {
                     var version = _serializer.ProtocolVersion;
@@ -174,7 +174,7 @@ namespace Cassandra
             throw new NoHostAvailableException(triedHosts);
         }
 
-        private async Task<Connection> ChangeProtocolVersion(ProtocolVersion nextVersion, Connection previousConnection,
+        private async Task<IConnection> ChangeProtocolVersion(ProtocolVersion nextVersion, IConnection previousConnection,
                                                  UnsupportedProtocolVersionException ex = null,
                                                  ProtocolVersion? previousVersion = null)
         {
@@ -326,7 +326,7 @@ namespace Cassandra
         /// </summary>
         /// <exception cref="SocketException" />
         /// <exception cref="DriverInternalError" />
-        private async Task SubscribeToServerEvents(Connection connection)
+        private async Task SubscribeToServerEvents(IConnection connection)
         {
             connection.CassandraEventResponse += OnConnectionCassandraEvent;
             // Register to events on the connection

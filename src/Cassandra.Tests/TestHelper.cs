@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using Cassandra.Serialization;
 using IgnoreAttribute = Cassandra.Mapping.Attributes.IgnoreAttribute;
 using Microsoft.DotNet.InternalAbstractions;
+using Moq;
 
 namespace Cassandra.Tests
 {
@@ -498,7 +499,7 @@ namespace Cassandra.Tests
         {
             try
             {
-                await task;
+                await task.ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -592,6 +593,44 @@ namespace Cassandra.Tests
             {
                 Assert.AreEqual(expectedValues[i], values[queryColumnsOrder[i]]);
             }
+        }
+
+        internal static void RetryAssert(Action act, int msPerRetry = 5, int maxRetries = 100)
+        {
+            TestHelper.RetryAssertAsync(
+                () =>
+                {
+                    act();
+                    return Task.FromResult(true);
+                },
+                msPerRetry,
+                maxRetries).GetAwaiter().GetResult();
+        }
+
+        internal static async Task RetryAssertAsync(Func<Task> func, int msPerRetry = 2, int maxRetries = 100)
+        {
+            Exception lastException;
+            var i = 0;
+            do
+            {
+                try
+                {
+                    await func().ConfigureAwait(false);
+                    return;
+                }
+                catch (MockException ex1)
+                {
+                    lastException = ex1;
+                }
+                catch (AssertionException ex2)
+                {
+                    lastException = ex2;
+                }
+
+                await Task.Delay(msPerRetry).ConfigureAwait(false);
+            } while (i++ < maxRetries);
+
+            throw lastException;
         }
         
         private class SendReceiveCounter
@@ -703,6 +742,40 @@ namespace Cassandra.Tests
                 {
                     return false;
                 }
+            }
+        }
+
+        /// <summary>
+        /// A policy only suitable for testing that lets you specify the handlers for the query plan and distance
+        /// methods.
+        /// </summary>
+        internal class CustomLoadBalancingPolicy : ILoadBalancingPolicy
+        {
+            private ICluster _cluster;
+            private readonly Func<ICluster, Host, HostDistance> _distanceHandler;
+            private readonly Func<ICluster, string, IStatement, IEnumerable<Host>> _queryPlanHandler;
+
+            public CustomLoadBalancingPolicy(
+                Func<ICluster, string, IStatement, IEnumerable<Host>> queryPlanHandler = null,
+                Func<ICluster, Host, HostDistance> distanceHandler = null)
+            {
+                _queryPlanHandler = queryPlanHandler ?? ((cluster, ks, statement) => cluster.AllHosts());
+                _distanceHandler = distanceHandler ?? ((_, __) => HostDistance.Local);
+            }
+
+            public void Initialize(ICluster cluster)
+            {
+                _cluster = cluster;
+            }
+
+            public HostDistance Distance(Host host)
+            {
+                return _distanceHandler(_cluster, host);
+            }
+
+            public IEnumerable<Host> NewQueryPlan(string keyspace, IStatement query)
+            {
+                return _queryPlanHandler(_cluster, keyspace, query);
             }
         }
     }
