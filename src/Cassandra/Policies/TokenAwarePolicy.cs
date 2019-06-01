@@ -153,7 +153,15 @@ namespace Cassandra
         {
             get
             {
-                return false;
+                return _childPolicy.RequiresPartitionMap;
+            }
+        }
+
+        public bool RequiresTokenMap
+        {
+            get
+            {
+                return true;
             }
         }
     }
