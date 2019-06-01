@@ -80,5 +80,7 @@ namespace Cassandra
         IEnumerable<Host> NewQueryPlan(string keyspace, IStatement query);
 
         bool RequiresPartitionMap { get; }
+
+        bool RequiresTokenMap { get; }
     }
 }

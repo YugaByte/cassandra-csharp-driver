@@ -266,6 +266,8 @@ namespace Cassandra.YugaByte.Tests
             VerifyRowSet(_session.Execute("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'p' as " +
                 "bigint) = 4294967295"));
             VerifyRowSet(_session.Execute("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'p' as " +
+                "decimal) = 4294967295"));
+            VerifyRowSet(_session.Execute("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'p' as " +
                 "text) = '4294967295'"));
             VerifyRowSet(_session.Execute("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'r' as " +
                 "integer) = -2147483648"));
@@ -297,6 +299,8 @@ namespace Cassandra.YugaByte.Tests
                 "bigint) = 100").ToArray().Length);
             Assert.AreEqual(0, _session.Execute("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'p' as " +
                 "bigint) < 99").ToArray().Length);
+            Assert.AreEqual(0, _session.Execute("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'p' as " +
+                "decimal) < 99").ToArray().Length);
 
             // Invalid cast types.
             ExecuteInvalid("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'p' as boolean) = 123");
@@ -308,7 +312,6 @@ namespace Cassandra.YugaByte.Tests
             ExecuteInvalid("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'p' as timeuuid) = 123");
             ExecuteInvalid("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'p' as uuid) = 123");
             ExecuteInvalid("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'p' as varint) = 123");
-            ExecuteInvalid("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->>'p' as decimal) = 123");
             ExecuteInvalid("SELECT * FROM test_json WHERE CAST(c2->'a'->'q'->'p' as text) = '123'");
 
             // Test update.
@@ -341,7 +344,6 @@ namespace Cassandra.YugaByte.Tests
             // Invalid rhs (needs to be valid json)
             ExecuteInvalid("UPDATE test_json SET c2->'a'->'q'->'p' = 100 WHERE c1 = 1");
             // non-existent key.
-            ExecuteInvalid("UPDATE test_json SET c2->'a'->'q'->'xyz' = '100' WHERE c1 = 1");
             ExecuteInvalid("UPDATE test_json SET c2->'aa'->'q'->'p' = '100' WHERE c1 = 1");
             // Array out of bounds.
             ExecuteInvalid("UPDATE test_json SET c2->'a1'->200->'k2'->2 = '2000' WHERE c1 = 1");

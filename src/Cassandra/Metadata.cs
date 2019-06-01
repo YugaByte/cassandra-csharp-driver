@@ -153,6 +153,11 @@ namespace Cassandra
 
         internal void RebuildTokenMap()
         {
+            if (!Configuration.Policies.LoadBalancingPolicy.RequiresTokenMap)
+            {
+                Logger.Info("Skip rebuilding token map");
+                return;
+            }
             Logger.Info("Rebuilding token map");
             if (Partitioner == null)
             {
