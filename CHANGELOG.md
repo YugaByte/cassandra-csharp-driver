@@ -1,5 +1,13 @@
 # ChangeLog - DataStax C# Driver
 
+## 3.7.1
+
+2019-06-01
+
+### Features
+
+- Skip rebulding token map when it is not required by balancing policy
+
 ## 3.7.0
 
 2018-11-26
