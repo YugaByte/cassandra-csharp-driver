@@ -318,5 +318,13 @@ namespace Cassandra.YugaByte
                 return true;
             }
         }
+
+        public bool RequiresTokenMap
+        {
+            get
+            {
+                return _childPolicy.RequiresTokenMap;
+            }
+        }
     }
 }
